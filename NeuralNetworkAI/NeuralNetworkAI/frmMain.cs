@@ -27,6 +27,9 @@ namespace NeuralNetworkAI {
         private void Game() {
             //http://gameprogrammingpatterns.com/game-loop.html
 
+            //global variable?
+            int FPS = 30;
+
             Task t = Task.Run(() => {
                 //change this true to a variable at some point so we can stop and start
                 while (true) {
@@ -38,7 +41,7 @@ namespace NeuralNetworkAI {
                         //render the game
                         render();
 
-                        Thread.Sleep(33); //loop every 10 milliseconds (could change this depending on what we need and eventually even make this delta time)
+                        Thread.Sleep(1000 / FPS); //(could change this depending on what we need and eventually even make this delta time)
                     } catch (Exception ex) {
 
                     }
