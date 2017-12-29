@@ -27,6 +27,9 @@ namespace NeuralNetworkAI {
         private void Game() {
             //http://gameprogrammingpatterns.com/game-loop.html
 
+            //global variable?
+            int FPS = 30;
+
             Task t = Task.Run(() => {
                 //change this true to a variable at some point so we can stop and start
                 while (true) {
@@ -38,7 +41,7 @@ namespace NeuralNetworkAI {
                         //render the game
                         render();
 
-                        Thread.Sleep(100); //loop every 10 milliseconds (could change this depending on what we need and eventually even make this delta time)
+                        Thread.Sleep(1000 / FPS); //(could change this depending on what we need and eventually even make this delta time)
                     } catch (Exception ex) {
 
                     }
@@ -47,6 +50,7 @@ namespace NeuralNetworkAI {
         }
 
         private void render() {
+            //we should probably make these global variables as they wont change. no need to keep calling new variables and reusing cpu power
             int cellWidth = 10;
             int cellHeight = 10;
             int columns = picGame.Width / cellWidth;
@@ -56,24 +60,35 @@ namespace NeuralNetworkAI {
             Graphics g = this.CreateGraphics();
             g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
 
-            //add this buffer later on when the game is a little more developed in order to reduce lag
-            //Bitmap buffer = new Bitmap(picGame.Width, picGame.Height);
+            //create a buffer to draw to it first in order to reduce visible lag
+            Bitmap buffer = new Bitmap(picGame.Width, picGame.Height);
 
+            //create a cell
             Rectangle rect = new Rectangle(0, 0, cellWidth, cellHeight);
 
-            g = picGame.CreateGraphics();
+            //get the graphics for the buffer so we can draw to it
+            g = Graphics.FromImage(buffer);
 
             Pen border = new Pen(Color.Black);
 
-            //clear the picturebox before we redraw to it
-            //g.Clear(Color.DarkGreen);
+            //clear the buffer and fill it with the background
+            g.Clear(Color.DarkGreen);
 
             for (int col = 0; col < columns; col++) {
                 for (int row = 0; row < rows; row++) {
-                    g.FillRectangle(Brushes.DarkGreen, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                    //draw the border so we can see what is going on
                     g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+
+                    //add a function here to draw the player
+
+                    //add a function here to draw the coins from an array. the update function will take care of placing the coins and adding coins to array
                 }
             }
+
+            //draw buffer to the picturebox
+            g = picGame.CreateGraphics();
+            g.DrawImage(buffer, 0, 0);
+
         }
     }
 }
