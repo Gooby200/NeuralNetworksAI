@@ -29,49 +29,49 @@ namespace NeuralNetworkAI {
             this.color = color;
         }
 
-        private void setLocation(int x, int y) {
+        public void setLocation(int x, int y) {
             this.x = x;
             this.y = y;
         }
 
-        private int getX() {
+        public int getX() {
             return x;
         }
 
-        private int getY() {
+        public int getY() {
             return y;
         }
 
-        private void setSize(int width, int height) {
+        public void setSize(int width, int height) {
             this.width = width;
             this.height = height;
         }
 
-        private int getWidth() {
+        public int getWidth() {
             return width;
         }
 
-        private int getHeight() {
+        public int getHeight() {
             return height;
         }
 
-        private void setPointValue(int pointValue) {
+        public void setPointValue(int pointValue) {
             this.pointValue = pointValue;
         }
 
-        private int getPointValue() {
+        public int getPointValue() {
             return pointValue;
         }
 
-        private void setColor(Color color) {
+        public void setColor(Color color) {
             this.color = color;
         }
 
-        private Color getColor() {
+        public Color getColor() {
             return color;
         }
 
-        private void draw(Graphics g) {
+        public void draw(Graphics g) {
             g.FillRectangle(new SolidBrush(color), x, y, width, height);
         }
     }
