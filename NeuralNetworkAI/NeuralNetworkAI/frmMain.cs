@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -12,12 +8,26 @@ using System.Windows.Forms;
 namespace NeuralNetworkAI {
     public partial class frmMain : Form {
         //create array of coins here maybe 
-        Coin coin = new Coin();
+        List<Coin> coins = new List<Coin>();
+
+        Random rnd = new Random();
 
         int cellWidth;
         int cellHeight;
         int columns;
         int rows;
+
+        //global variable?
+        int FPS = 30;
+        
+        int coinTick = 0;
+        int coinEvent = 100; //coin event is really the speed for which the coin goes up
+
+        int coinGenerationTick = 0;
+        int coinGenerationEvent = 1000;
+
+        int gcTick = 0;
+        int gcEvent = 1000;
 
         public frmMain() {
             InitializeComponent();
@@ -33,7 +43,8 @@ namespace NeuralNetworkAI {
             columns = picGame.Width / cellWidth;
             rows = picGame.Height / cellHeight;
 
-            coin.setLocation(0, (rows * cellHeight) - cellHeight);
+            //initialize first coin somewhere
+            coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
 
             Game();
         }
@@ -41,20 +52,22 @@ namespace NeuralNetworkAI {
         private void Game() {
             //http://gameprogrammingpatterns.com/game-loop.html
 
-            //global variable?
-            int FPS = 1;
+
 
             Task t = Task.Run(() => {
                 //change this true to a variable at some point so we can stop and start
                 while (true) {
                     try {
-                        //process inputs
+                        //process inputs (submit the user requests and let update handle the movement)
 
-                        //render the game
+                        //render the game at the FPS
                         render();
 
                         //update everything
                         update();
+
+                        //we leak memory, so lets fix that by doing garbage collection
+                        collectGarbage();
 
                         Thread.Sleep(1000 / FPS); //(could change this depending on what we need and eventually even make this delta time)
                     } catch (Exception ex) {
@@ -64,15 +77,41 @@ namespace NeuralNetworkAI {
             });
         }
 
+        private void collectGarbage() {
+            gcTick += (1000 / FPS);
+            if (gcTick >= gcEvent) {
+                gcTick = 0;
+                System.GC.Collect();
+            }
+        }
+
         private void update() {
-            //move the coin up
-            coin.setLocation(coin.getX(), coin.getY() - 10);
+            //move the coins up
+            coinTick += (1000 / FPS);
+            if (coinTick >= coinEvent) {
+                foreach (Coin coin in coins) {
+                    coin.setLocation(coin.getX(), coin.getY() - cellHeight);
+                }
+                coinTick = 0;
+            }
+
+            //generate new coin
+            coinGenerationTick += (1000 / FPS);
+            if (coinGenerationTick >= coinGenerationEvent) {
+                coins.Add(new Coin(rnd.Next(0, columns) * cellWidth, (rows * cellHeight) - cellHeight));
+                coinGenerationTick = 0;
+            }
+
+            //move player if that's being requested
+
+            //do some collision detection to check game status
         }
 
         private void render() {
             //redraw the form's background
-            Graphics g = this.CreateGraphics();
-            g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
+            using (Graphics g = this.CreateGraphics()) {
+                g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
+            }            
 
             //create a buffer to draw to it first in order to reduce visible lag
             Bitmap buffer = new Bitmap(picGame.Width, picGame.Height);
@@ -81,29 +120,32 @@ namespace NeuralNetworkAI {
             Rectangle rect = new Rectangle(0, 0, cellWidth, cellHeight);
 
             //get the graphics for the buffer so we can draw to it
-            g = Graphics.FromImage(buffer);
+            using (Graphics g = Graphics.FromImage(buffer)) {
+                Pen border = new Pen(Color.Black);
 
-            Pen border = new Pen(Color.Black);
+                //clear the buffer and fill it with the background
+                g.Clear(Color.DarkGreen);
 
-            //clear the buffer and fill it with the background
-            g.Clear(Color.DarkGreen);
-
-            for (int col = 0; col < columns; col++) {
-                for (int row = 0; row < rows; row++) {
-                    //add a function here to draw the coins from an array. the update function will take care of placing the coins and adding coins to array
+                //draw the coins from an array
+                foreach (Coin coin in coins) {
                     coin.draw(g);
+                }
 
-                    //add a function here to draw the player
+                //draw the player
 
-                    //draw the border so we can see what is going on
-                    g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                //draw the border
+                for (int col = 0; col < columns; col++) {
+                    for (int row = 0; row < rows; row++) {
+                        //draw the border so we can see what is going on
+                        g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                    }
                 }
             }
 
             //draw buffer to the picturebox
-            g = picGame.CreateGraphics();
-            g.DrawImage(buffer, 0, 0);
-
+            using (Graphics g = picGame.CreateGraphics()) {
+                g.DrawImage(buffer, 0, 0);
+            }
         }
     }
 }
