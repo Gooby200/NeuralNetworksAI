@@ -11,6 +11,9 @@ namespace NeuralNetworkAI {
         List<Coin> coins = new List<Coin>();
         List<Coin> coinRemoval = new List<Coin>();
 
+        //create player
+        Player player = new Player();
+
         Random rnd = new Random();
 
         int cellWidth;
@@ -47,6 +50,10 @@ namespace NeuralNetworkAI {
             //initialize first coin somewhere
             coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
 
+            //initialize the player
+            player.setY((rows / 3) * cellHeight);
+            player.setX((columns / 2) * cellWidth);
+
             Game();
         }
 
@@ -60,6 +67,7 @@ namespace NeuralNetworkAI {
                 while (true) {
                     try {
                         //process inputs (submit the user requests and let update handle the movement)
+                        process();
 
                         //render the game at the FPS
                         render();
@@ -76,6 +84,10 @@ namespace NeuralNetworkAI {
                     }
                 }
             });
+        }
+
+        private void process() {
+
         }
 
         private void collectGarbage() {
@@ -151,6 +163,7 @@ namespace NeuralNetworkAI {
                 }
 
                 //draw the player
+                player.draw(g);
 
                 //draw the border
                 for (int col = 0; col < columns; col++) {
