@@ -15,7 +15,9 @@ namespace NeuralNetworkAI {
         private Color color;
 
         //default coin
-        public Coin() : this(10, 10, 0, 0, 1, Color.Yellow) { }
+        public Coin() : this(0, 0) { }
+
+        public Coin(int x, int y) : this(10, 10, x, y, 1, Color.Yellow) { }
 
         //this constructor is here if we want to do anything crazy, like do things with points and different points are different colors
         public Coin(int width, int height, int x, int y, int pointValue, Color color) {
