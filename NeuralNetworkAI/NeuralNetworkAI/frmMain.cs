@@ -128,7 +128,7 @@ namespace NeuralNetworkAI {
 
         private void render() {
             //redraw the form's background
-            using (Graphics g = this.CreateGraphics()) {
+            using (Graphics g = this.CreateGraphics()) { 
                 g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
             }            
 
@@ -147,7 +147,7 @@ namespace NeuralNetworkAI {
 
                 //draw the coins from an array
                 foreach (Coin coin in coins) {
-                    coin.draw(g); 
+                    coin.draw(g);
                 }
 
                 //draw the player
