@@ -9,6 +9,7 @@ namespace NeuralNetworkAI {
     public partial class frmMain : Form {
         //create array of coins here maybe 
         List<Coin> coins = new List<Coin>();
+        List<Coin> coinRemoval = new List<Coin>();
 
         Random rnd = new Random();
 
@@ -21,10 +22,10 @@ namespace NeuralNetworkAI {
         int FPS = 30;
         
         int coinTick = 0;
-        int coinEvent = 100; //coin event is really the speed for which the coin goes up
+        int coinEvent = 50; //coin event is really the speed for which the coin goes up
 
         int coinGenerationTick = 0;
-        int coinGenerationEvent = 1000;
+        int coinGenerationEvent = 500;
 
         int gcTick = 0;
         int gcEvent = 1000;
@@ -89,13 +90,31 @@ namespace NeuralNetworkAI {
             //move the coins up
             coinTick += (1000 / FPS);
             if (coinTick >= coinEvent) {
+                //move the coins
                 foreach (Coin coin in coins) {
                     coin.setLocation(coin.getX(), coin.getY() - cellHeight);
+
+                    //the coin is already off the screen and we dont need to waste time drawing it.
+                    //prepare it for removal
+                    if (coin.getY() < 0) {
+                        coinRemoval.Add(coin);
+                    }
                 }
+
+                //remove the requested coins
+                foreach (Coin coin in coinRemoval) {
+                    coins.Remove(coin);
+                }
+
+                //clear our coin removal array
+                coinRemoval.Clear();
+
+                //reset tick
                 coinTick = 0;
             }
 
             //generate new coin
+            coinGenerationEvent = rnd.Next(200, 2000);
             coinGenerationTick += (1000 / FPS);
             if (coinGenerationTick >= coinGenerationEvent) {
                 coins.Add(new Coin(rnd.Next(0, columns) * cellWidth, (rows * cellHeight) - cellHeight));
@@ -136,7 +155,7 @@ namespace NeuralNetworkAI {
                 //draw the border
                 for (int col = 0; col < columns; col++) {
                     for (int row = 0; row < rows; row++) {
-                        //draw the border so we can see what is going on
+                        //draw the border so we can see the grid
                         g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
                     }
                 }
