@@ -11,6 +11,14 @@ using System.Windows.Forms;
 
 namespace NeuralNetworkAI {
     public partial class frmMain : Form {
+        //create array of coins here maybe 
+        Coin coin = new Coin();
+
+        int cellWidth;
+        int cellHeight;
+        int columns;
+        int rows;
+
         public frmMain() {
             InitializeComponent();
         }
@@ -20,6 +28,12 @@ namespace NeuralNetworkAI {
             //the task will constantly draw a grid. each cell will be 10px by 10px and the background will
             //be green in color (or whatever color). for the beginning, lets draw a border around each cell
             //just so we can see whats going on
+            cellWidth = 10;
+            cellHeight = 10;
+            columns = picGame.Width / cellWidth;
+            rows = picGame.Height / cellHeight;
+
+            coin.setLocation(0, (rows * cellHeight) - cellHeight);
 
             Game();
         }
@@ -28,7 +42,7 @@ namespace NeuralNetworkAI {
             //http://gameprogrammingpatterns.com/game-loop.html
 
             //global variable?
-            int FPS = 30;
+            int FPS = 1;
 
             Task t = Task.Run(() => {
                 //change this true to a variable at some point so we can stop and start
@@ -36,10 +50,11 @@ namespace NeuralNetworkAI {
                     try {
                         //process inputs
 
-                        //update everything
-
                         //render the game
                         render();
+
+                        //update everything
+                        update();
 
                         Thread.Sleep(1000 / FPS); //(could change this depending on what we need and eventually even make this delta time)
                     } catch (Exception ex) {
@@ -49,13 +64,12 @@ namespace NeuralNetworkAI {
             });
         }
 
-        private void render() {
-            //we should probably make these global variables as they wont change. no need to keep calling new variables and reusing cpu power
-            int cellWidth = 10;
-            int cellHeight = 10;
-            int columns = picGame.Width / cellWidth;
-            int rows = picGame.Height / cellHeight;
+        private void update() {
+            //move the coin up
+            coin.setLocation(coin.getX(), coin.getY() - 10);
+        }
 
+        private void render() {
             //redraw the form's background
             Graphics g = this.CreateGraphics();
             g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
@@ -76,12 +90,13 @@ namespace NeuralNetworkAI {
 
             for (int col = 0; col < columns; col++) {
                 for (int row = 0; row < rows; row++) {
-                    //draw the border so we can see what is going on
-                    g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                    //add a function here to draw the coins from an array. the update function will take care of placing the coins and adding coins to array
+                    coin.draw(g);
 
                     //add a function here to draw the player
 
-                    //add a function here to draw the coins from an array. the update function will take care of placing the coins and adding coins to array
+                    //draw the border so we can see what is going on
+                    g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
                 }
             }
 
