@@ -147,7 +147,7 @@ namespace NeuralNetworkAI {
 
                 //draw the coins from an array
                 foreach (Coin coin in coins) {
-                    coin.draw(g);
+                    coin.draw(g); 
                 }
 
                 //draw the player
