@@ -78,6 +78,13 @@ namespace NeuralNetworkAI {
             points = 0;
         }
 
+        public bool eatCoin(Coin coin) {
+            if (coin.getX() == x && coin.getY() == y) {
+                return true;
+            }
+            return false;
+        }
+
         public void draw(Graphics g) {
             g.FillRectangle(new SolidBrush(color), x, y, width, height);
         }
