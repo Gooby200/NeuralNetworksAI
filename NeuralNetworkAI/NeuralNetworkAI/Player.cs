@@ -85,6 +85,14 @@ namespace NeuralNetworkAI {
             return false;
         }
 
+        public void moveLeft() {
+            x -= width;
+        }
+
+        public void moveRight() {
+            x += width;
+        }
+
         public void draw(Graphics g) {
             g.FillRectangle(new SolidBrush(color), x, y, width, height);
         }

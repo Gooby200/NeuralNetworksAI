@@ -12,7 +12,15 @@ namespace NeuralNetworkAI {
         List<Coin> coinRemoval = new List<Coin>();
 
         //create player
+        enum PlayerDirection { Still, Left, Right };
         Player player = new Player();
+
+        int playerSpeedTick = 0;
+        int playerSpeedEvent = 10;
+
+        int moveDirection = (int) PlayerDirection.Still;
+
+        //int moveDirection = 0; //1 = left and 2 = right
 
         Random rnd;
 
@@ -36,6 +44,8 @@ namespace NeuralNetworkAI {
         int keyPressed;
 
         int points = 0;
+
+        
 
         public frmMain() {
             InitializeComponent();
@@ -162,6 +172,21 @@ namespace NeuralNetworkAI {
             }
 
             //move player if that's being requested
+            playerSpeedTick += (1000 / FPS);
+            if (playerSpeedTick >= playerSpeedEvent) {
+                playerSpeedTick = 0;
+                if (moveDirection == (int) PlayerDirection.Left) {
+                    if (player.getX() - cellWidth >= 0) {
+                        //move player left
+                        player.moveLeft();
+                    }
+                } else if (moveDirection == (int) PlayerDirection.Right) {
+                    if ((player.getX() / cellWidth) + 1 < columns) {
+                        //move player right
+                        player.moveRight();
+                    }
+                }
+            }
 
             //do some collision detection to check game status
             foreach (Coin coin in coins) {
