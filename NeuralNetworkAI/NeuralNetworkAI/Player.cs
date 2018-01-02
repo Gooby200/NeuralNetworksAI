@@ -93,7 +93,7 @@ namespace NeuralNetworkAI {
             x += width;
         }
 
-        public void draw(Graphics g) {
+        public void draw(Graphics g) { 
             g.FillRectangle(new SolidBrush(color), x, y, width, height);
         }
     }
