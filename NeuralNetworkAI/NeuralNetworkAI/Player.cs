@@ -85,6 +85,13 @@ namespace NeuralNetworkAI {
             return false;
         }
 
+        public bool hitBomb(Bomb bomb) {
+            if (bomb.getX() == x && bomb.getY() == y) {
+                return true;
+            }
+            return false;
+        }
+
         public void moveLeft() {
             x -= width;
         }
