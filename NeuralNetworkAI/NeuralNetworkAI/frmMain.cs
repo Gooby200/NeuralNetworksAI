@@ -22,7 +22,7 @@ namespace NeuralNetworkAI {
         Player player = new Player();
 
         int playerSpeedTick = 0;
-        int playerSpeedEvent = 10;
+        int playerSpeedEvent = 5;
 
         int moveDirection = (int) PlayerDirection.Still;
 
@@ -325,6 +325,26 @@ namespace NeuralNetworkAI {
             using (Graphics g = picGame.CreateGraphics()) {
                 g.DrawImage(buffer, 0, 0);
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e) {
+            Clipboard.SetText(txtSeed.Text);
+        }
+
+        private void frmMain_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.A) {
+                moveDirection = (int)PlayerDirection.Left;
+            } else if (e.KeyCode == Keys.D) {
+                moveDirection = (int)PlayerDirection.Right;
+            }
+        }
+
+        private void button1_KeyDown(object sender, KeyEventArgs e) {
+            //MessageBox.Show(e.KeyValue.ToString());
+        }
+
+        private void frmMain_KeyUp(object sender, KeyEventArgs e) {
+            moveDirection = (int)PlayerDirection.Still;
         }
     }
 }
