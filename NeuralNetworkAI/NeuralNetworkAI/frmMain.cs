@@ -71,6 +71,33 @@ namespace NeuralNetworkAI {
         }
 
         private void Form1_Load(object sender, EventArgs e) {
+            double[][] a = new double[][] {
+                new double[] {1,0 },
+                new double[] {0,1 }
+            };
+
+            double[][] b = new double[][] {
+                new double[] {4,1},
+                new double[] {2,2}
+            };
+
+            double[][] c = new double[][] {
+                new double[] {1,2},
+                new double[] {3,4},
+                new double[] {5,6}
+            };
+
+            double[][] inputs = new double[][] {
+                new double[] {3,1.5}
+            };
+
+            double[][] weights = new double[][] {
+                new double[] {1.49303,-0.41228}
+            };
+
+            NeuralNetwork.dot(a, b);
+            NeuralNetwork.transpose(c);
+            Console.WriteLine(NeuralNetwork.foo(inputs, weights, 1.74727));
             //focus the game
             picGame.Focus();
 
@@ -88,9 +115,11 @@ namespace NeuralNetworkAI {
             columns = picGame.Width / cellWidth;
             rows = picGame.Height / cellHeight;
 
+            this.Text = columns + ", " + rows;
+
             //initialize first coin somewhere
-            //coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
-            coins.Add(new Coin((columns / 2) * cellWidth, (rows * cellHeight) - cellHeight));
+            coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
+            //coins.Add(new Coin((columns / 2) * cellWidth, (rows * cellHeight) - cellHeight));
 
             //generate a bomb, but dont generate it at the same location as the coin
 
@@ -313,12 +342,12 @@ namespace NeuralNetworkAI {
                 player.draw(g);
 
                 //draw the border
-                for (int col = 0; col < columns; col++) {
-                    for (int row = 0; row < rows; row++) {
-                        //draw the border so we can see the grid
-                        g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-                    }
-                }
+                //for (int col = 0; col < columns; col++) {
+                //    for (int row = 0; row < rows; row++) {
+                //        //draw the border so we can see the grid
+                //        g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+                //    }
+                //}
             }
 
             //draw buffer to the picturebox
@@ -345,6 +374,10 @@ namespace NeuralNetworkAI {
 
         private void frmMain_KeyUp(object sender, KeyEventArgs e) {
             moveDirection = (int)PlayerDirection.Still;
+        }
+
+        private void picGame_Click(object sender, EventArgs e) {
+
         }
     }
 }

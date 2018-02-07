@@ -41,6 +41,7 @@
             this.picGame.Size = new System.Drawing.Size(291, 401);
             this.picGame.TabIndex = 0;
             this.picGame.TabStop = false;
+            this.picGame.Click += new System.EventHandler(this.picGame_Click);
             // 
             // label1
             // 
