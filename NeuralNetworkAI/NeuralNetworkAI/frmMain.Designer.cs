@@ -29,7 +29,8 @@
             this.lblPoints = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.txtSeed = new System.Windows.Forms.TextBox();
+            this.txtSeed = new System.Windows.Forms.Label();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picGame)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,6 +41,7 @@
             this.picGame.Size = new System.Drawing.Size(291, 401);
             this.picGame.TabIndex = 0;
             this.picGame.TabStop = false;
+            this.picGame.Click += new System.EventHandler(this.picGame_Click);
             // 
             // label1
             // 
@@ -98,13 +100,26 @@
             // 
             // txtSeed
             // 
+            this.txtSeed.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.txtSeed.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.txtSeed.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold);
             this.txtSeed.Location = new System.Drawing.Point(78, 68);
-            this.txtSeed.Multiline = true;
             this.txtSeed.Name = "txtSeed";
-            this.txtSeed.ReadOnly = true;
-            this.txtSeed.Size = new System.Drawing.Size(225, 20);
-            this.txtSeed.TabIndex = 7;
-            this.txtSeed.TabStop = false;
+            this.txtSeed.Size = new System.Drawing.Size(160, 20);
+            this.txtSeed.TabIndex = 8;
+            this.txtSeed.Text = "0";
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(244, 67);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(59, 22);
+            this.button1.TabIndex = 0;
+            this.button1.TabStop = false;
+            this.button1.Text = "Copy";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.button1_KeyDown);
             // 
             // frmMain
             // 
@@ -112,6 +127,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.ClientSize = new System.Drawing.Size(315, 517);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.txtSeed);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label3);
@@ -125,6 +141,8 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Neural Networks Game";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.frmMain_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.frmMain_KeyUp);
             ((System.ComponentModel.ISupportInitialize)(this.picGame)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -139,7 +157,8 @@
         private System.Windows.Forms.Label lblPoints;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.TextBox txtSeed;
+        private System.Windows.Forms.Label txtSeed;
+        private System.Windows.Forms.Button button1;
     }
 }
 
