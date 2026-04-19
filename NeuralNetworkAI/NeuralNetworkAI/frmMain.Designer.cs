@@ -41,7 +41,6 @@
             this.picGame.Size = new System.Drawing.Size(291, 401);
             this.picGame.TabIndex = 0;
             this.picGame.TabStop = false;
-            this.picGame.Click += new System.EventHandler(this.picGame_Click);
             // 
             // label1
             // 
@@ -119,7 +118,6 @@
             this.button1.Text = "Copy";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
-            this.button1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.button1_KeyDown);
             // 
             // frmMain
             // 
