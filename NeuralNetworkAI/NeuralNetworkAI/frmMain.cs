@@ -1,61 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Drawing;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace NeuralNetworkAI {
     public partial class frmMain : Form {
-        bool running = true;
+        enum Mode { Manual, AI, Training }
 
-        //create array of coins here maybe 
-        List<Coin> coins = new List<Coin>();
-        List<Coin> coinRemoval = new List<Coin>();
+        // Network topology is kept in one place so load/save and the trainer agree.
+        static readonly int[] Topology = new int[] { GameSimulation.FEATURE_COUNT, 8, 3 };
 
-        //create an array of bombs
-        List<Bomb> bombs = new List<Bomb>();
-        List<Bomb> bombRemoval = new List<Bomb>();
+        Mode mode = Mode.Manual;
+        bool running;
+        int moveDirection = GameSimulation.ACTION_STILL;
 
-        //create player
-        enum PlayerDirection { Still, Left, Right };
-        Player player = new Player();
+        GameSimulation sim;
+        Agent agent;
 
-        int playerSpeedTick = 0;
-        int playerSpeedEvent = 5;
-
-        int moveDirection = (int) PlayerDirection.Still;
-
-        //int moveDirection = 0; //1 = left and 2 = right
-
-        Random rnd;
-
-        int cellWidth;
-        int cellHeight;
+        int cellWidth = 10;
+        int cellHeight = 10;
         int columns;
         int rows;
-
-        //global variable?
         int FPS = 30;
-        
-        int coinTick = 0;
-        const int coinEvent = 50; //coin event is really the speed for which the coin goes up
 
-        int coinGenerationTick = 0;
-        int coinGenerationEvent = 500;
-
-        int gcTick = 0;
-        int gcEvent = 1000;
-
-        int keyPressed;
-
-        int points = 0;
-
-        int bombGenerationTick = 0;
-        int bombGenerationEvent = 500;
-        int bombTick = 0;
-        int bombEvent = coinEvent;
-        
+        CancellationTokenSource trainingCts;
+        Task trainingTask;
 
         public frmMain() {
             InitializeComponent();
@@ -63,41 +34,31 @@ namespace NeuralNetworkAI {
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
             if (keyData == Keys.F1) {
-                return true;    // indicate that you handled this keystroke
+                return true;
             }
-
-            // Call the base class
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            //focus the game
             picGame.Focus();
 
-            //set the seed number
             int seed = numberGenerator(8);
-            rnd = new Random(seed);
             txtSeed.Text = seed.ToString();
 
-            //create and run a task that will draw into the picturebox (rename the picturebox though)
-            //the task will constantly draw a grid. each cell will be 10px by 10px and the background will
-            //be green in color (or whatever color). for the beginning, lets draw a border around each cell
-            //just so we can see whats going on
-            cellWidth = 10;
-            cellHeight = 10;
             columns = picGame.Width / cellWidth;
             rows = picGame.Height / cellHeight;
 
-            //initialize first coin somewhere
-            coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
+            StartNewGame();
+        }
 
-            //initialize the player
-            player.setY((rows / 3) * cellHeight);
-            player.setX((columns / 2) * cellWidth);
-
-
-
-            Game();
+        private void StartNewGame() {
+            int s;
+            int seed = int.TryParse(txtSeed.Text, out s) ? s : Environment.TickCount;
+            sim = new GameSimulation(seed, columns, rows, cellWidth, cellHeight, FPS, 60 * FPS * 10);
+            moveDirection = GameSimulation.ACTION_STILL;
+            lblPoints.Text = "0";
+            running = true;
+            RunGameLoop();
         }
 
         private int numberGenerator(int length) {
@@ -110,194 +71,65 @@ namespace NeuralNetworkAI {
                 }
                 rndNumbers += rndNumber.ToString();
             }
-            return Int32.Parse(rndNumbers);
+            return int.Parse(rndNumbers);
         }
 
-        private void Game() {
-            //http://gameprogrammingpatterns.com/game-loop.html
-
-
-
-            Task t = Task.Run(() => {
+        private void RunGameLoop() {
+            Task.Run(() => {
                 while (running) {
                     try {
-                        process();
-                        render();
-                        update();
-                        collectGarbage();
+                        int action = moveDirection;
+                        if (mode == Mode.AI && agent != null) {
+                            action = agent.Decide(sim.GetFeatures());
+                        }
 
+                        if (!sim.Step(action)) {
+                            running = false;
+                            break;
+                        }
+
+                        UpdatePointsLabel(sim.points);
+                        render();
                         Thread.Sleep(1000 / FPS);
                     } catch (Exception) {
                     }
                 }
 
                 if (!this.IsDisposed) {
-                    this.Invoke((MethodInvoker)(() => MessageBox.Show(this, "Game Over", "Game Over")));
+                    this.BeginInvoke((MethodInvoker)(() => {
+                        if (mode == Mode.AI) {
+                            StartNewGame();
+                        } else if (mode == Mode.Manual) {
+                            MessageBox.Show(this, "Game Over. Score: " + sim.points, "Game Over");
+                        }
+                    }));
                 }
             });
         }
 
-        private void process() {
-
-        }
-
-        private void collectGarbage() {
-            gcTick += (1000 / FPS);
-            if (gcTick >= gcEvent) {
-                gcTick = 0;
-                System.GC.Collect();
+        private void UpdatePointsLabel(int points) {
+            if (lblPoints.IsHandleCreated) {
+                lblPoints.BeginInvoke((MethodInvoker)(() => lblPoints.Text = points.ToString()));
             }
-        }
-
-        private void update() {
-            //move the coins up
-            coinTick += (1000 / FPS);
-            if (coinTick >= coinEvent) {
-                //move the coins
-                foreach (Coin coin in coins) {
-                    coin.setLocation(coin.getX(), coin.getY() - cellHeight);
-
-                    //the coin is already off the screen and we dont need to waste time drawing it.
-                    //prepare it for removal
-                    if (coin.getY() < 0) {
-                        coinRemoval.Add(coin);
-                    }
-                }
-                //reset tick
-                coinTick = 0;
-            }
-
-            //move the bombs up
-            bombTick += (1000 / FPS);
-            if (bombTick >= bombEvent) {
-                //move the bombs
-                foreach (Bomb bomb in bombs) {
-                    bomb.setLocation(bomb.getX(), bomb.getY() - cellHeight);
-
-                    //prepare it for removal
-                    if (bomb.getY() < 0) {
-                        bombRemoval.Add(bomb);
-                    }
-                }
-                //reset tick
-                bombTick = 0;
-            }
-
-            //generate new coin
-            bool coinGenerated = false;
-            coinGenerationEvent = rnd.Next(200, 3000);
-            coinGenerationTick += (1000 / FPS);
-            int coinXLocation = 0;
-            if (coinGenerationTick >= coinGenerationEvent) {
-                coinXLocation = rnd.Next(0, columns) * cellWidth;
-                coins.Add(new Coin(coinXLocation, (rows * cellHeight) - cellHeight));
-                coinGenerationTick = 0;
-                coinGenerated = true;
-            }
-
-            //generate new bomb
-            bombGenerationEvent = rnd.Next(200, 3000);
-            bombGenerationTick += (1000 / FPS);
-            if (bombGenerationTick >= bombGenerationEvent) {
-                int bombXLocation = rnd.Next(0, columns) * cellWidth;
-                if (coinGenerated && columns > 1) {
-                    while (bombXLocation == coinXLocation) {
-                        bombXLocation = rnd.Next(0, columns) * cellWidth;
-                    }
-                }
-                bombs.Add(new Bomb(bombXLocation, (rows * cellHeight) - cellHeight));
-                bombGenerationTick = 0;
-            }
-
-            //move player if that's being requested
-            playerSpeedTick += (1000 / FPS);
-            if (playerSpeedTick >= playerSpeedEvent) {
-                playerSpeedTick = 0;
-                if (moveDirection == (int) PlayerDirection.Left) {
-                    if (player.getX() - cellWidth >= 0) {
-                        //move player left
-                        player.moveLeft();
-                    }
-                } else if (moveDirection == (int) PlayerDirection.Right) {
-                    if ((player.getX() / cellWidth) + 1 < columns) {
-                        //move player right
-                        player.moveRight();
-                    }
-                }
-            }
-
-            //do some collision detection to check game status
-            foreach (Coin coin in coins) {
-                if (player.eatCoin(coin)) {
-                    //add points if the player ate a coin
-                    lblPoints.Invoke((MethodInvoker)(() => lblPoints.Text = (Int32.Parse(lblPoints.Text) + 1).ToString()));
-
-                    //prepare the coin for removal
-                    coinRemoval.Add(coin);
-                }
-            }
-
-            foreach (Bomb bomb in bombs) {
-                if (player.hitBomb(bomb)) {
-                    //game over
-                    running = false;
-                }
-            }
-
-            //remove any coins that need to be removed
-            foreach (Coin coin in coinRemoval) {
-                coins.Remove(coin);
-            }
-
-            //remove any bombs that need to be removed
-            foreach (Bomb bomb in bombRemoval) {
-                bombs.Remove(bomb);
-            }
-
-            //clear our coin removal array
-            coinRemoval.Clear();
-
-            //clear our bomb removal array
-            bombRemoval.Clear();
         }
 
         private void render() {
-            //redraw the form's background
-            using (Graphics g = this.CreateGraphics()) { 
-                g.FillRectangle(new SolidBrush(Color.FromArgb(255, 64, 64, 64)), 0, 0, this.Width, this.Height);
-            }            
+            if (picGame.IsDisposed || !picGame.IsHandleCreated) return;
 
-            //create a buffer to draw to it first in order to reduce visible lag
             Bitmap buffer = new Bitmap(picGame.Width, picGame.Height);
-
-            //create a cell
-            Rectangle rect = new Rectangle(0, 0, cellWidth, cellHeight);
-
-            //get the graphics for the buffer so we can draw to it
             using (Graphics g = Graphics.FromImage(buffer)) {
-                Pen border = new Pen(Color.Black);
-
-                //clear the buffer and fill it with the background
                 g.Clear(Color.DarkGreen);
-
-                //draw the coins from an array
-                foreach (Coin coin in coins) {
-                    coin.draw(g);
+                foreach (Coin coin in sim.coins) coin.draw(g);
+                foreach (Bomb bomb in sim.bombs) bomb.draw(g);
+                using (SolidBrush brush = new SolidBrush(Color.Red)) {
+                    g.FillRectangle(brush, sim.playerX, sim.playerY, cellWidth, cellHeight);
                 }
-
-                //draw the bombs
-                foreach (Bomb bomb in bombs) {
-                    bomb.draw(g);
+            }
+            picGame.BeginInvoke((MethodInvoker)(() => {
+                using (Graphics g = picGame.CreateGraphics()) {
+                    g.DrawImage(buffer, 0, 0);
                 }
-
-                //draw the player
-                player.draw(g);
-            }
-
-            //draw buffer to the picturebox
-            using (Graphics g = picGame.CreateGraphics()) {
-                g.DrawImage(buffer, 0, 0);
-            }
+            }));
         }
 
         private void button1_Click(object sender, EventArgs e) {
@@ -305,15 +137,114 @@ namespace NeuralNetworkAI {
         }
 
         private void frmMain_KeyDown(object sender, KeyEventArgs e) {
+            if (mode != Mode.Manual) return;
             if (e.KeyCode == Keys.A) {
-                moveDirection = (int)PlayerDirection.Left;
+                moveDirection = GameSimulation.ACTION_LEFT;
             } else if (e.KeyCode == Keys.D) {
-                moveDirection = (int)PlayerDirection.Right;
+                moveDirection = GameSimulation.ACTION_RIGHT;
             }
         }
 
         private void frmMain_KeyUp(object sender, KeyEventArgs e) {
-            moveDirection = (int)PlayerDirection.Still;
+            if (mode != Mode.Manual) return;
+            moveDirection = GameSimulation.ACTION_STILL;
+        }
+
+        private void btnPlayAI_Click(object sender, EventArgs e) {
+            if (agent == null) {
+                MessageBox.Show(this, "No trained agent loaded. Train or load weights first.", "AI Play");
+                return;
+            }
+            mode = Mode.AI;
+            lblMode.Text = "Mode: AI";
+            running = false;
+            Thread.Sleep(1000 / FPS + 20);
+            StartNewGame();
+        }
+
+        private void btnManual_Click(object sender, EventArgs e) {
+            mode = Mode.Manual;
+            lblMode.Text = "Mode: Manual";
+            running = false;
+            Thread.Sleep(1000 / FPS + 20);
+            StartNewGame();
+            picGame.Focus();
+        }
+
+        private void btnTrain_Click(object sender, EventArgs e) {
+            if (trainingTask != null && !trainingTask.IsCompleted) {
+                trainingCts.Cancel();
+                btnTrain.Text = "Train";
+                return;
+            }
+
+            // Pause the visible game while training so rendering doesn't compete for CPU.
+            running = false;
+            mode = Mode.Training;
+            lblMode.Text = "Mode: Training...";
+            btnTrain.Text = "Stop";
+
+            trainingCts = new CancellationTokenSource();
+            CancellationToken ct = trainingCts.Token;
+            Trainer trainer = new Trainer(
+                Topology, columns, rows, cellWidth, cellHeight,
+                populationSize: 30, elitismCount: 6, gamesPerAgent: 3,
+                simFps: FPS, maxTicks: 2000,
+                mutationRate: 0.1, mutationScale: 0.3, seed: 0);
+
+            int targetGenerations = 50;
+            trainingTask = Task.Run(() => {
+                trainer.RunGenerations(targetGenerations, progress => {
+                    this.BeginInvoke((MethodInvoker)(() => {
+                        lblMode.Text = "Training gen " + progress.generation + "/" + targetGenerations
+                            + " best=" + progress.bestScore.ToString("F1");
+                    }));
+                }, ct);
+
+                if (trainer.Best != null) agent = trainer.Best;
+
+                this.BeginInvoke((MethodInvoker)(() => {
+                    btnTrain.Text = "Train";
+                    mode = Mode.AI;
+                    lblMode.Text = "Mode: AI (trained, gen " + trainer.Generation
+                        + ", best " + trainer.BestScore.ToString("F1") + ")";
+                    running = false;
+                    Thread.Sleep(1000 / FPS + 20);
+                    StartNewGame();
+                }));
+            }, ct);
+        }
+
+        private void btnSave_Click(object sender, EventArgs e) {
+            if (agent == null) {
+                MessageBox.Show(this, "No agent to save. Train first.", "Save");
+                return;
+            }
+            using (SaveFileDialog dlg = new SaveFileDialog()) {
+                dlg.Filter = "Agent weights (*.txt)|*.txt";
+                dlg.FileName = "agent.txt";
+                if (dlg.ShowDialog(this) == DialogResult.OK) {
+                    try {
+                        agent.SaveToFile(dlg.FileName);
+                    } catch (Exception ex) {
+                        MessageBox.Show(this, "Save failed: " + ex.Message, "Save");
+                    }
+                }
+            }
+        }
+
+        private void btnLoad_Click(object sender, EventArgs e) {
+            using (OpenFileDialog dlg = new OpenFileDialog()) {
+                dlg.Filter = "Agent weights (*.txt)|*.txt";
+                if (dlg.ShowDialog(this) == DialogResult.OK) {
+                    try {
+                        agent = Agent.LoadFromFile(dlg.FileName);
+                        lblMode.Text = "Loaded: " + Path.GetFileName(dlg.FileName);
+                    } catch (Exception ex) {
+                        MessageBox.Show(this, "Load failed: " + ex.Message, "Load");
+                    }
+                }
+            }
         }
     }
 }
