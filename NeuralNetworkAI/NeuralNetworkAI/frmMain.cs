@@ -7,16 +7,22 @@ using System.Windows.Forms;
 
 namespace NeuralNetworkAI {
     public partial class frmMain : Form {
+        bool running = true;
+
         //create array of coins here maybe 
         List<Coin> coins = new List<Coin>();
         List<Coin> coinRemoval = new List<Coin>();
+
+        //create an array of bombs
+        List<Bomb> bombs = new List<Bomb>();
+        List<Bomb> bombRemoval = new List<Bomb>();
 
         //create player
         enum PlayerDirection { Still, Left, Right };
         Player player = new Player();
 
         int playerSpeedTick = 0;
-        int playerSpeedEvent = 10;
+        int playerSpeedEvent = 5;
 
         int moveDirection = (int) PlayerDirection.Still;
 
@@ -33,7 +39,7 @@ namespace NeuralNetworkAI {
         int FPS = 30;
         
         int coinTick = 0;
-        int coinEvent = 50; //coin event is really the speed for which the coin goes up
+        const int coinEvent = 50; //coin event is really the speed for which the coin goes up
 
         int coinGenerationTick = 0;
         int coinGenerationEvent = 500;
@@ -45,6 +51,10 @@ namespace NeuralNetworkAI {
 
         int points = 0;
 
+        int bombGenerationTick = 0;
+        int bombGenerationEvent = 500;
+        int bombTick = 0;
+        int bombEvent = coinEvent;
         
 
         public frmMain() {
@@ -79,8 +89,7 @@ namespace NeuralNetworkAI {
             rows = picGame.Height / cellHeight;
 
             //initialize first coin somewhere
-            //coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
-            coins.Add(new Coin((columns / 2) * cellWidth, (rows * cellHeight) - cellHeight));
+            coins.Add(new Coin(rnd.Next(columns) * cellWidth, (rows * cellHeight) - cellHeight));
 
             //initialize the player
             player.setY((rows / 3) * cellHeight);
@@ -110,25 +119,20 @@ namespace NeuralNetworkAI {
 
 
             Task t = Task.Run(() => {
-                //change this true to a variable at some point so we can stop and start
-                while (true) {
+                while (running) {
                     try {
-                        //process inputs (submit the user requests and let update handle the movement)
                         process();
-
-                        //render the game at the FPS
                         render();
-
-                        //update everything
                         update();
-
-                        //we leak memory, so lets fix that by doing garbage collection
                         collectGarbage();
 
-                        Thread.Sleep(1000 / FPS); //(could change this depending on what we need and eventually even make this delta time)
-                    } catch (Exception ex) {
-
+                        Thread.Sleep(1000 / FPS);
+                    } catch (Exception) {
                     }
+                }
+
+                if (!this.IsDisposed) {
+                    this.Invoke((MethodInvoker)(() => MessageBox.Show(this, "Game Over", "Game Over")));
                 }
             });
         }
@@ -163,12 +167,46 @@ namespace NeuralNetworkAI {
                 coinTick = 0;
             }
 
+            //move the bombs up
+            bombTick += (1000 / FPS);
+            if (bombTick >= bombEvent) {
+                //move the bombs
+                foreach (Bomb bomb in bombs) {
+                    bomb.setLocation(bomb.getX(), bomb.getY() - cellHeight);
+
+                    //prepare it for removal
+                    if (bomb.getY() < 0) {
+                        bombRemoval.Add(bomb);
+                    }
+                }
+                //reset tick
+                bombTick = 0;
+            }
+
             //generate new coin
+            bool coinGenerated = false;
             coinGenerationEvent = rnd.Next(200, 3000);
             coinGenerationTick += (1000 / FPS);
+            int coinXLocation = 0;
             if (coinGenerationTick >= coinGenerationEvent) {
-                coins.Add(new Coin(rnd.Next(0, columns) * cellWidth, (rows * cellHeight) - cellHeight));
+                coinXLocation = rnd.Next(0, columns) * cellWidth;
+                coins.Add(new Coin(coinXLocation, (rows * cellHeight) - cellHeight));
                 coinGenerationTick = 0;
+                coinGenerated = true;
+            }
+
+            //generate new bomb
+            bombGenerationEvent = rnd.Next(200, 3000);
+            bombGenerationTick += (1000 / FPS);
+            if (bombGenerationTick >= bombGenerationEvent) {
+                int bombXLocation = rnd.Next(0, columns) * cellWidth;
+                if (coinGenerated && columns > 1) {
+                    while (bombXLocation == coinXLocation) {
+                        bombXLocation = rnd.Next(0, columns) * cellWidth;
+                    }
+                }
+                bombs.Add(new Bomb(bombXLocation, (rows * cellHeight) - cellHeight));
+                bombGenerationTick = 0;
             }
 
             //move player if that's being requested
@@ -199,13 +237,28 @@ namespace NeuralNetworkAI {
                 }
             }
 
+            foreach (Bomb bomb in bombs) {
+                if (player.hitBomb(bomb)) {
+                    //game over
+                    running = false;
+                }
+            }
+
             //remove any coins that need to be removed
             foreach (Coin coin in coinRemoval) {
                 coins.Remove(coin);
             }
 
+            //remove any bombs that need to be removed
+            foreach (Bomb bomb in bombRemoval) {
+                bombs.Remove(bomb);
+            }
+
             //clear our coin removal array
             coinRemoval.Clear();
+
+            //clear our bomb removal array
+            bombRemoval.Clear();
         }
 
         private void render() {
@@ -232,22 +285,35 @@ namespace NeuralNetworkAI {
                     coin.draw(g);
                 }
 
+                //draw the bombs
+                foreach (Bomb bomb in bombs) {
+                    bomb.draw(g);
+                }
+
                 //draw the player
                 player.draw(g);
-
-                //draw the border
-                for (int col = 0; col < columns; col++) {
-                    for (int row = 0; row < rows; row++) {
-                        //draw the border so we can see the grid
-                        g.DrawRectangle(border, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-                    }
-                }
             }
 
             //draw buffer to the picturebox
             using (Graphics g = picGame.CreateGraphics()) {
                 g.DrawImage(buffer, 0, 0);
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e) {
+            Clipboard.SetText(txtSeed.Text);
+        }
+
+        private void frmMain_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.A) {
+                moveDirection = (int)PlayerDirection.Left;
+            } else if (e.KeyCode == Keys.D) {
+                moveDirection = (int)PlayerDirection.Right;
+            }
+        }
+
+        private void frmMain_KeyUp(object sender, KeyEventArgs e) {
+            moveDirection = (int)PlayerDirection.Still;
         }
     }
 }
